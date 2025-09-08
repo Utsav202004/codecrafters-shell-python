@@ -7,7 +7,7 @@ def searcher(type):
 
     for dir in dir_list:
         if os.access(dir, os.X_OK):
-            print(f"{type} is {dir}")
+            print(f"{type} is {os.path.join(dir, type)}")
             return
 
     print(f"{type}: not found")
