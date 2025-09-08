@@ -2,20 +2,17 @@ import sys # importing sys module for system specific functions
 import os
 
 def searcher(type):
-    path_string = os.environ.get('PATH', '')
-    dir_list = path_string.split(':')
+    path_string = os.environ.get('PATH', '') # getting the path string
+    dir_list = path_string.split(':') # list of directories
 
-    for dir in dir_list:
-        if os.path.exists(os.path.join(dir, type)):
-            if os.access(os.path.join(dir, type), os.X_OK):
-                print(f"{type} is {os.path.join(dir, type)}")
+    for dir in dir_list: # searching
+        full_path = os.path.join(dir, type)
+        if os.path.exists(full_path) and os.access(full_path, os.X_OK): # checking for the existence and access
+                print(f"{type} is {full_path}")
                 return
-            else:
-                continue
-        else:
-            continue
 
-    print(f"{type}: not found")
+
+    print(f"{type}: not found") # nothing found 
 
 commands = {
     'exit' : lambda exit_code : os._exit(int(exit_code)),
