@@ -1,27 +1,31 @@
 import sys # importing sys module for system specific functions
+import os
 
+types = {
+    'exit'
+}
+
+commands = {
+    'exit' : lambda exit_code : os._exit(int(exit_code)),
+    'exho' : lambda *args : print(" ".join(*args)),
+    'type' : lambda type : print(f"{type} is a shell builtin") if type in commands else print(f"{type}: not found"),
+}
 
 def main():
 
     while True: # creating a REPL
 
-        sys.stdout.write("$ ") # diff from print, do not print \n (newline)
-        command = input() # taking and storing the input
+        sys.stdout.write("$ ")  # diff from print, does not print \n (newline)
 
-        parts = command.split()
+        command_with_arg = input().split() # taking and storing the command and arguments as list
 
-        if not parts:
-            continue # handling empty inputs
+        command = command_with_arg[0] # the command 
 
+        if not command in commands:
+            print(f"{command}: command not found")
+            continue
 
-        if command == 'exit 0':
-            break
-
-        elif parts[0] == 'echo': # builtin echo
-            print(" ".join(parts[1:]))
-
-        else:
-            print(f"{command}: command not found") 
+        commands[command](*command_with_arg[1:]) # passing the argument to the required command function
 
 
 if __name__ == "__main__":
