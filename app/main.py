@@ -1,14 +1,20 @@
 import sys # importing sys module for system specific functions
 import os
 
-types = {
-    'exit'
-}
+def searcher(type):
+    path_string = os.environ.get('PATH', '')
+    dir_list = path_string.split(':')
+
+    for dir in dir_list:
+        if os.access(dir, os.X_OK):
+            print(f"{type} is {dir}")
+
+    print(f"{type}: not found")
 
 commands = {
     'exit' : lambda exit_code : os._exit(int(exit_code)),
     'echo' : lambda *args : print(" ".join(args)),
-    'type' : lambda type : print(f"{type} is a shell builtin") if (type in commands) else print(f"{type}: not found"),
+    'type' : lambda type : print(f"{type} is a shell builtin") if (type in commands) else searcher(type),
 }
 
 def main():
