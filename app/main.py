@@ -6,9 +6,10 @@ def searcher(type):
     dir_list = path_string.split(':')
 
     for dir in dir_list:
-        if os.access(dir, os.X_OK):
-            print(f"{type} is {os.path.join(dir, type)}")
-            return
+        if os.path.exists(os.path.join(dir, type)):
+            if os.access(os.path.join(dir, type)):
+                print(f"{type} is {os.path.join(dir, type)}")
+                return
 
     print(f"{type}: not found")
 
