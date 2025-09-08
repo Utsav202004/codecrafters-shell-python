@@ -10,6 +10,10 @@ def searcher(type):
             if os.access(os.path.join(dir, type)):
                 print(f"{type} is {os.path.join(dir, type)}")
                 return
+            else:
+                continue
+        else:
+            continue
 
     print(f"{type}: not found")
 
