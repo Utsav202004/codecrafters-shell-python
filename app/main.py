@@ -7,7 +7,7 @@ types = {
 
 commands = {
     'exit' : lambda exit_code : os._exit(int(exit_code)),
-    'exho' : lambda *args : print(" ".join(*args)),
+    'echo' : lambda *args : print(" ".join(*args)),
     'type' : lambda type : print(f"{type} is a shell builtin") if (type in commands) else print(f"{type}: not found"),
 }
 
