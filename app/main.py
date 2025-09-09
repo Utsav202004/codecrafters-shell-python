@@ -12,12 +12,45 @@ def searcher(type):     # searching for a executbale file in the PATH
 
     return None     # if nothing found 
 
+def path_verifier(path):    # verying the path passed with cd
+    f_path = "" # full path
+
+    if (path[0] == '/' or path[0] != '.') and os.path.isdir(path):  # abs path
+        return path
+    
+    elif path[0:2] == './' and os.path.isdir(f_path := os.path.join(os.getcwd(), path)):    # sub-dir
+        return f_path
+    
+    elif path[0:3] == '../':    # parent dir
+        count = 0
+        for i in range(0, len(path), 3): # counting how much we need to move up in the directories
+            if path[i] == '.':
+                count += 1
+            else:
+                break
+        
+        cnt = count
+        f_path = os.getcwd()
+        ind = len(f_path) # figuring out the new path
+        while(count > 0): # moving up the directories
+            for ind in range(ind, 0, -1):
+                if f_path[ind] == '/':
+                    count -= 1
+        if f_path := os.path.isdir(os.path.join(f_path[0:ind+1]), path[3*cnt:]):
+            return f_path
+        else:
+            return None # invalid path
+        
+    else:   # invalid path
+        return None
+            
+        
 commands = {
     'exit' : lambda exit_code : os._exit(int(exit_code)),
     'echo' : lambda *args : print(" ".join(args)),
     'type' : lambda type : print(f"{type} is a shell builtin") if (type in commands) else ( print(f"{type} is {path}") if (path := searcher(type)) else print(f"{type}: not found")),
     'pwd' : lambda : print(os.getcwd()),
-    'cd' : lambda new_path : os.chdir(new_path) if os.path.isdir(new_path) else print(f"cd: {new_path}: No such file or directory"),
+    'cd' : lambda path : os.chdir(path) if os.path.isdir(path) else print(f"cd: {path}: No such file or directory"),
 }
 
 def main():
