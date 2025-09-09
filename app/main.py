@@ -1,90 +1,108 @@
-import sys      # importing sys module for system specific functions
 import os
+import sys
 
-def searcher(type):     # searching for a executbale file in the PATH
-    path_string = os.environ.get('PATH', '')    # getting the path string
-    dir_list = path_string.split(':')   # list of directories
+class Shell:
 
-    for dir in dir_list:    # searching
-        full_path = os.path.join(dir, type)
-        if os.path.exists(full_path) and os.access(full_path, os.X_OK):     # checking for the existence and access
-                return full_path
-
-    return None     # if nothing found 
-
-def path_verifier(path):    # verying the path passed with cd
-    f_path = "" # full path
-
-    if (path[0] == '/' or path[0] != '.') and os.path.isdir(path):  # abs path
-        return path
-    
-    elif path[0:2] == './' and os.path.isdir(f_path := os.path.join(os.getcwd(), path)):    # sub-dir
-        return f_path
-    
-    elif path[0:3] == '../':    # parent dir
-        count = 0
-        for i in range(0, len(path), 3): # counting how much we need to move up in the directories
-            if path[i] == '.':
-                count += 1
-            else:
-                break
+    def __init__(self):
         
-        cnt = count
-        f_path = os.getcwd()
-        ind = len(f_path) # figuring out the new path
-        while(count > 0): # moving up the directories
-            for ind in range(ind, 0, -1):
-                if f_path[ind] == '/':
-                    count -= 1
-        if f_path := os.path.isdir(os.path.join(f_path[0:ind+1]), path[3*cnt:]):
-            return f_path
+        self.builtins = {   # storing builtin functions as instance var
+            'echo' : self.builtin_echo,
+            'exit' : self.builtin_exit,
+            'pwd' : self.builtin_pwd,
+            'type' : self.builtin_type,
+            'cd' : self.builtin_cd,
+        }
+
+    def builtin_echo(self, *args):
+        if not args:
+            return
+        print(" ".join(args))
+
+    def builtin_exit(self, *args):
+        exit_code = int(args[0]) if args else 0
+        sys.exit(exit_code)
+
+    def builtin_pwd(self, *args):
+        print(os.getcwd())
+
+    def builtin_type(self, *args):
+        if not args:
+            return
+        
+        cmd = args[0]
+        if cmd in self.builtins:
+            print(f"{cmd} is a shell builtin")
+        elif executible_path := self.find_in_path(cmd):
+            print(f"{cmd} is {executible_path}")
         else:
-            return None # invalid path
-        
-    else:   # invalid path
+            print(f"{cmd}: not found")
+
+    def builtin_cd(self, *args):
+        path = args[0] if args else "~"
+        expanded_path = os.path.expanduser(path)
+
+        try:
+            os.chdir(expanded_path)
+        except FileNotFoundError:
+            print(f"cd: {path}: No such file or directory", file=sys.stderr)
+        except PermissionError:
+            print(f"cd: {path}: Permission denied", file=sys.stderr)
+
+    def find_in_path(self, command):
+        path_dirs = os.environ.get('PATH', '').split(":")
+
+        for directory in path_dirs:
+            full_path = os.path.join(directory, command)
+            if os.path.isfile(full_path) and os.access(full_path, os.X_OK):
+                return full_path
         return None
-            
+    
+    def execute_external(self, command, args):
+        pid = os.fork()
+
+        if pid == 0:
+            try:
+                os.execvp(command, [command] + args)
+            except OSError:
+                print(f"{command}: command not found", file=sys.stderr)
+                os._exit(127)
+        else:
+            os.waitpid(pid, 0)
+
+
+    def execute_command(self, command, args):
+        if command in self.builtins:
+                    method = self.builtins[command]
+                    method(*args)
+        elif self.find_in_path(command):
+            self.execute_external(command, args)
+        else:
+            print(f"{command}: command not found")
+
+    def run(self):  # Main loop - the repl 
+
+        while True:
+            try:
+                sys.stdout.write("$ ")
+
+                user_input = input().strip()
+
+                if not user_input:  # empty input
+                    continue
+
+                parts = user_input.split()
+                command = parts[0]
+                args = parts[1:]
+
+                self.execute_command(command, args)
         
-commands = {
-    'exit' : lambda exit_code : os._exit(int(exit_code)),
-    'echo' : lambda *args : print(" ".join(args)),
-    'type' : lambda type : print(f"{type} is a shell builtin") if (type in commands) else ( print(f"{type} is {path}") if (path := searcher(type)) else print(f"{type}: not found")),
-    'pwd' : lambda : print(os.getcwd()),
-    'cd' : lambda path = '~' : os.chdir(expanded) if os.path.isdir(expanded := os.path.expanduser(path)) else print(f"cd: {path}: No such file or directory"),
-}
-
-def main():
-
-    while True:     # creating a REPL
-
-        sys.stdout.write("$ ")     # diff from print, does not print \n (newline)
-
-        command_with_arg = input().split()      # taking and storing the command and arguments as list
-
-        command = command_with_arg[0]   # the command 
-
-        if command in commands:     # execute builtins
-            commands[command](*command_with_arg[1:])    # passing the argument to the required command function
-
-        else:   # executing commands in path
-            full_path = searcher(command)
-            if full_path:
-                pid = os.fork()     # creating a child process
-
-                if pid == 0:    # entering child process
-                    try:
-                        os.execvp(command, command_with_arg)
-                    except OSError:     # if the command cannot be executed
-                        print(f"{command}: command not found", file=sys.stderr)
-                        os._exit(127)   # exiting with an error
-
-                else:   # entering parent process
-                    os.waitpid(pid, 0)  # parent needs to wait for the child process to end
-
-            else:
-                print(f"{command}: command not found")    
-                  
-
+            except EOFError: # ctrlD usage
+                print()
+                break
+            except KeyboardInterrupt: # ctrlC usage
+                print()
+                continue
 
 if __name__ == "__main__":
-    main()
+    shell = Shell()
+    shell.run()
