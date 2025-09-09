@@ -17,6 +17,7 @@ commands = {
     'echo' : lambda *args : print(" ".join(args)),
     'type' : lambda type : print(f"{type} is a shell builtin") if (type in commands) else ( print(f"{type} is {path}") if (path := searcher(type)) else print(f"{type}: not found")),
     'pwd' : lambda : print(os.getcwd()),
+    'cd' : lambda new_path : os.chdir(new_path),
 }
 
 def main():
