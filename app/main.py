@@ -50,7 +50,7 @@ commands = {
     'echo' : lambda *args : print(" ".join(args)),
     'type' : lambda type : print(f"{type} is a shell builtin") if (type in commands) else ( print(f"{type} is {path}") if (path := searcher(type)) else print(f"{type}: not found")),
     'pwd' : lambda : print(os.getcwd()),
-    'cd' : lambda path : os.chdir(path) if os.path.isdir(path) else print(f"cd: {path}: No such file or directory"),
+    'cd' : lambda path = '~' : os.chdir(expanded) if os.path.isdir(expanded := os.path.expanduser(path)) else print(f"cd: {path}: No such file or directory"),
 }
 
 def main():
