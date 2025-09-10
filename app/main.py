@@ -84,19 +84,20 @@ class Shell:
         words = []
         in_squotes = False
         in_dquotes = False
-        back_slash = False # for post back slash character
+        i = 0
 
-        for char in user_input:
+        while i < len(user_input):
+            char = user_input[i]
 
-            # handling the escape backslash
-            if back_slash:  # simply appending the word after backslash
-                if char == 'n' and (in_squotes or in_dquotes): # newline character
-                    curr_word.append("\n")
-                else:
+            # handling the escape backslash 
+            if char == "\\" and i + 1 < len(user_input): # if backslash is last char
+                next_char = user_input[i+1]
+
+                if in_squotes: # in single quote, \ is literal \
                     curr_word.append(char)
-                back_slash = False
-            elif char == "\\":
-                back_slash = True
+                else: # non single quotes case
+                    curr_word.append(next_char)
+                    i += 1
             
             # handling quote
             elif char == "'" and not (in_squotes or in_dquotes): # for single quote in double quote
@@ -116,8 +117,8 @@ class Shell:
             else:
                 curr_word.append(char)
 
-        if back_slash:
-            curr_word.append("\\")
+            i += 1
+
         if curr_word:   # last curr word not added yet
             words.append(''.join(curr_word))
 
