@@ -84,9 +84,15 @@ class Shell:
         words = []
         in_squotes = False
         in_dquotes = False
+        back_slash = False # for post back slash character
 
         for char in user_input:
-            if char == "'" and not (in_squotes or in_dquotes): # for single quote in double quote
+            if back_slash:
+                curr_word.append(char)
+                back_slash = False
+            elif char == "\\" and not back_slash:
+                back_slash = True
+            elif char == "'" and not (in_squotes or in_dquotes): # for single quote in double quote
                 in_squotes = True
             elif char == "'" and in_squotes:
                 in_squotes = False
