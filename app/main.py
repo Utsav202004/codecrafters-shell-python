@@ -87,8 +87,11 @@ class Shell:
         back_slash = False # for post back slash character
 
         for char in user_input:
-            if back_slash:
-                curr_word.append(char)
+            if back_slash:  # simply appending the word after backslash
+                if char == 'n' and (in_squotes or in_dquotes): # newline character
+                    print()
+                else:
+                    curr_word.append(char)
                 back_slash = False
             elif char == "\\" and not back_slash:
                 back_slash = True
