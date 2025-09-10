@@ -1,6 +1,5 @@
 import os
 import sys
-from pathlib import Path
 
 class Shell:
 
@@ -186,8 +185,8 @@ class Shell:
 
                 parts = self.command_parser(user_input)
 
-                if ">" in parts: # for redirection 
-                    ind = parts.index(">")
+                if ">" in parts or "1>" in parts: # for redirection 
+                    ind = parts.index(">") if ">" in parts else parts.index("1>")
 
                     command_part = parts[: ind]
                     path_part = parts[ind + 1] if ind + 1 < len(parts) else None # edge case
