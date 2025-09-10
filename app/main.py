@@ -11,6 +11,7 @@ class Shell:
             'pwd' : self.builtin_pwd,
             'type' : self.builtin_type,
             'cd' : self.builtin_cd,
+            '1>' : self.builtin_redirect,
         }
 
     def builtin_echo(self, *args):
@@ -47,6 +48,17 @@ class Shell:
             print(f"cd: {path}: No such file or directory", file=sys.stderr)
         except PermissionError:
             print(f"cd: {path}: Permission denied", file=sys.stderr)
+
+    def builtin_redirect(self, *args):
+        i = 0
+        for i in range(len(args)):
+            if i == ">" or "1>":
+                continue
+
+        command = args[0]
+        new_args = args[1:i] + args[i+1:]
+
+        self.execute_command(command, new_args)
 
     def find_in_path(self, command):
         path_dirs = os.environ.get('PATH', '').split(":")
@@ -146,6 +158,10 @@ class Shell:
                 parts = self.command_parser(user_input)
                 command = parts[0]
                 args = parts[1:]
+
+                if (">" or "1>") in parts:
+                    command = "1>"
+                    args = parts
 
                 self.execute_command(command, args)
         
