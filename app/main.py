@@ -97,7 +97,7 @@ class Shell:
                     curr_word.append(char)
 
                 elif in_dquotes:
-                    if next_char in ['"', '\\', '$']: # handling edge cases
+                    if next_char in ['"', '\\', '$', '`']: # handling edge cases
                         curr_word.append(next_char)
                         i += 1
                     else:
