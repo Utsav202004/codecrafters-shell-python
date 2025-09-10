@@ -86,7 +86,7 @@ class Shell:
         in_dquotes = False
         i = 0
 
-        while i < len(user_input):
+        while i < len(user_input): # parsing each char, keeping record
             char = user_input[i]
 
             # handling the escape backslash 
@@ -97,7 +97,7 @@ class Shell:
                     curr_word.append(char)
 
                 elif in_dquotes:
-                    if next_char in ['"', '\\', '$']:
+                    if next_char in ['"', '\\', '$']: # handling edge cases
                         curr_word.append(next_char)
                         i += 1
                     else:
