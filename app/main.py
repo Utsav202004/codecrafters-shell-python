@@ -52,8 +52,8 @@ class Shell:
     def builtin_redirect(self, *args):
         i = 0
         for i in range(len(args)):
-            if i == ">" or "1>":
-                continue
+            if i == ( ">" or "1>" ):
+                break
 
         command = args[0]
         new_args = args[1:i] + args[i+1:]
