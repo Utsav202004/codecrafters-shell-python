@@ -134,7 +134,7 @@ class Shell:
     
     def execute_and_redirect(self, command, args, file_path):
 
-        if command in self.builtins: # stdout works for only parent process, non-builtin function creates child process
+        if command in self.builtins: # stdout works for parent process, non-builtin -> child process
             org_output = sys.stdout # ref to the original std output
 
             try:
@@ -147,7 +147,7 @@ class Shell:
                 sys.stdout = org_output # restoring the pipe
 
         else:
-            if self.find_in_path(command):
+            if self.find_in_path(command): # create a sep function for path executibles
                 self.execute_external_and_redirect(command, args, file_path)
             else: # edge case
                 print(f"{command}: command not found")
