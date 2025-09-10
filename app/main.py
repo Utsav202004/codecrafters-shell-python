@@ -1,5 +1,6 @@
 import os
 import sys
+from pathlib import Path
 
 class Shell:
 
@@ -50,6 +51,10 @@ class Shell:
             print(f"cd: {path}: Permission denied", file=sys.stderr)
 
     def builtin_redirect(self, *args):
+
+        if not os.path.isfile(args[-1]):
+            Path(args[-1]).touch()
+
         i = 0
         for i in range(len(args)):
             if i == ( ">" or "1>" ):
