@@ -79,18 +79,18 @@ class Shell:
         else:
             print(f"{command}: command not found")
 
-    def command_parser(self, user_input): # adressing quotes parsing : echo 'foo    bar' -> should give -> foo    bar -> and not -> 'foo bar'
+    def command_parser(self, user_input): # adressing quotes
         curr_word = []
         words = []
         in_squotes = False
         in_dquotes = False
 
         for char in user_input:
-            if char == "'" and not (in_squotes or in_dquotes):
+            if char == "'" and not (in_squotes or in_dquotes): # for single quote in double quote
                 in_squotes = True
             elif char == "'" and in_squotes:
                 in_squotes = False
-            elif char == "\"" and not in_dquotes:
+            elif char == "\"" and not (in_dquotes or in_squotes): # for double q in single quote
                 in_dquotes = True
             elif char == "\"" and in_dquotes:
                 in_dquotes = False
@@ -101,7 +101,7 @@ class Shell:
             else:
                 curr_word.append(char)
 
-        if curr_word:   # for curr word which is not added yet   
+        if curr_word:   # last curr word not added yet
             words.append(''.join(curr_word))
 
         return words
