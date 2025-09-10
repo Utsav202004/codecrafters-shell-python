@@ -95,6 +95,14 @@ class Shell:
 
                 if in_squotes: # in single quote, \ is literal \
                     curr_word.append(char)
+
+                elif in_dquotes:
+                    if next_char in ['"', '\\', '$']:
+                        curr_word.append(next_char)
+                        i += 1
+                    else:
+                        curr_word.append(char)
+
                 else: # non single quotes case
                     curr_word.append(next_char)
                     i += 1
