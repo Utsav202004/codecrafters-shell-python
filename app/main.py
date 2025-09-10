@@ -86,7 +86,7 @@ class Shell:
         in_dquotes = False
 
         for char in user_input:
-            if char == "'" and not in_squotes:
+            if char == "'" and not (in_squotes or in_dquotes):
                 in_squotes = True
             elif char == "'" and in_squotes:
                 in_squotes = False
