@@ -12,7 +12,6 @@ class Shell:
             'pwd' : self.builtin_pwd,
             'type' : self.builtin_type,
             'cd' : self.builtin_cd,
-            '1>' : self.builtin_redirect,
         }
 
     def builtin_echo(self, *args):
@@ -49,21 +48,6 @@ class Shell:
             print(f"cd: {path}: No such file or directory", file=sys.stderr)
         except PermissionError:
             print(f"cd: {path}: Permission denied", file=sys.stderr)
-
-    def builtin_redirect(self, *args):
-
-        if not os.path.isfile(args[-1]):
-            Path(args[-1]).touch()
-
-        i = 0
-        for i in range(len(args)):
-            if i == ( ">" or "1>" ):
-                command = args[0]
-                new_args = args[1:i] + args[i+1:]
-                output = self.execute_command(command, new_args)
-
-                with open(args[-1], 'w') as f:
-                    f.write(output)
 
     def find_in_path(self, command):
         path_dirs = os.environ.get('PATH', '').split(":")
@@ -148,6 +132,20 @@ class Shell:
             words.append(''.join(curr_word))
 
         return words
+    
+    def execute_and_redirect(self, command, args, file_path):
+
+        org_output = sys.stdout # ref to the original std output
+
+        try:
+            with open(file_path, 'w') as f:
+                sys.stdout = f  # changing the pipe to desired location
+
+                self.execute_command(command, args)
+
+        finally:
+            sys.stdout = org_output # restoring the pipe
+        
 
     def run(self):  # Main loop - the repl 
 
@@ -161,14 +159,26 @@ class Shell:
                     continue
 
                 parts = self.command_parser(user_input)
-                command = parts[0]
-                args = parts[1:]
 
-                if (">" or "1>") in parts:
-                    command = "1>"
-                    args = parts
+                if ">" in parts or "1>" in parts: # for redirection 
+                    ind = parts.index(">")
 
-                self.execute_command(command, args)
+                    command_part = parts[: ind]
+                    path_part = parts[ind + 1] if ind + 1 < len(parts) else None # edge case
+
+                    if not command_part: # edge case - missing command part
+                        print("syntax error: missing command part", file = sys.stderr)
+
+                    if not path_part: # edge case - missing path part
+                        print("syntax error: missing path", file = sys.stderr)
+
+                    self.execute_and_redirect(command_part[0], command_part[1:], path_part)
+
+                else: # without redirection
+
+                    command = parts[0]
+                    args = parts[1:]
+                    self.execute_command(command, args)
         
             except EOFError: # ctrlD usage
                 print()
