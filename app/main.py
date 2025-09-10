@@ -60,7 +60,10 @@ class Shell:
             if i == ( ">" or "1>" ):
                 command = args[0]
                 new_args = args[1:i] + args[i+1:]
-                self.execute_command(command, new_args)
+                output = self.execute_command(command, new_args)
+
+                with open(args[-1], 'w') as f:
+                    f.write(output)
 
     def find_in_path(self, command):
         path_dirs = os.environ.get('PATH', '').split(":")
