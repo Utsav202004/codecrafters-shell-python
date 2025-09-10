@@ -79,28 +79,30 @@ class Shell:
         else:
             print(f"{command}: command not found")
 
-    def command_parser(self, user_input): # we need to adress the single quotes parsing : echo 'hello    world' -> should give -> hello   world -> and not -> 'hello world'
+    def command_parser(self, user_input): # adressing quotes parsing : echo 'foo    bar' -> should give -> foo    bar -> and not -> 'foo bar'
         curr_word = []
         words = []
-        in_quotes = False
+        in_squotes = False
+        in_dquotes = False
 
         for char in user_input:
-            if char == "'" and not in_quotes:
-                in_quotes = True
-            elif char == "'" and in_quotes:
-                in_quotes = False
-            elif char == " " and not in_quotes:
+            if char == "'" and not in_squotes:
+                in_squotes = True
+            elif char == "'" and in_squotes:
+                in_squotes = False
+            elif char == "\"" and not in_dquotes:
+                in_dquotes = True
+            elif char == "\"" and in_dquotes:
+                in_dquotes = False
+            elif char == " " and not (in_squotes or in_dquotes):
                 if curr_word:
                     words.append(''.join(curr_word))
                     curr_word = []
             else:
                 curr_word.append(char)
 
-        if curr_word:   # Edge Case: this is for "world" in "echo 'hello    world'""
-            if in_quotes:
-                words.extend((''.join(curr_word)).split())
-            else:    
-                words.append(''.join(curr_word))
+        if curr_word:   # for curr word which is not added yet   
+            words.append(''.join(curr_word))
 
         return words
 
