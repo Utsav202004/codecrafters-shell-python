@@ -89,7 +89,7 @@ class Shell:
         for char in user_input:
             if back_slash:  # simply appending the word after backslash
                 if char == 'n' and (in_squotes or in_dquotes): # newline character
-                    print()
+                    curr_word.append("\n")
                 else:
                     curr_word.append(char)
                 back_slash = False
