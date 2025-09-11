@@ -253,19 +253,40 @@ class Shell:
         readline.parse_and_bind('tab: complete')    # binding
         readline.set_completer_delims(' \t\n;')     # delimiter
 
-    def complete_command(self, text, state):
+    def complete_command(self, text: str, state: int) -> Optional[str]:
 
-        line = readline.get_line_buffer()
+        if state == 0:
 
-        if not line.strip() or line.strip() == text:
-        
-            matches = [cmd for cmd in self.builtins.keys() if cmd.startswith(text)]
+            line = readline.get_line_buffer()
 
-            if state == 0 and len(matches) == 0:
-                print('\x07', end='', flush=True)
+            if not line.strip() or line.strip == text:
+                all_commands = set(self.builtins.keys())
 
-            if state < len(matches):
-                return matches[state] + " "
+                directories = os.environ.get('PATH', '').split(':') # get ensures a safe output if the key not present, environ is a dictionary with 'PATH' as a key
+                for dir in directories:
+                    if os.path.isdir(dir):
+                        
+                        try:
+                            for filename in os.listdir(dir):
+                                full_path = dir + filename
+
+                                if os.access(full_path, os.X_OK): # checking execution perm
+                                    all_commands.add(filename)
+
+                        except (PermissionError, OSError):
+                            continue
+
+                self.matches = [cmd for cmd in sorted(all_commands) if cmd.startswith(text)]
+
+                if not self.matches:
+                    print('\x07', end='', flush=True)
+
+            else:
+                self.matches = []
+
+
+        if state < len(self.matches):
+                return self.matches[state] + " "
             
         return None
     
