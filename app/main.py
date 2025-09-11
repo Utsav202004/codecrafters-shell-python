@@ -132,13 +132,13 @@ class Shell:
 
         return words
     
-    def execute_and_redirect(self, command, args, file_path): # for > and 1>
+    def execute_and_redirect(self, command, args, file_path, append): # for > and 1>
 
         if command in self.builtins: # stdout works for parent process, non-builtin -> child process
             org_output = sys.stdout # ref to the original std output
 
             try:
-                with open(file_path, 'w') as f:
+                with open(file_path, 'a' if append else 'w') as f:
                     sys.stdout = f  # changing the pipe to desired location
 
                     self.execute_command(command, args)
@@ -148,17 +148,17 @@ class Shell:
 
         else:
             if self.find_in_path(command): # create a sep function for path executibles
-                self.execute_external_and_redirect(command, args, file_path)
+                self.execute_external_and_redirect(command, args, file_path, append)
             else: # edge case
                 print(f"{command}: command not found")
 
-    def execute_external_and_redirect(self, command, args, file_path): # for > and 1> for a executible path
+    def execute_external_and_redirect(self, command, args, file_path, append): # for > and 1> for a executible path
 
         pid = os.fork()
 
         if pid == 0: # child process
             try:
-                fd = os.open(file_path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC , 0o644) # write only, create if not exist, truncate if exists, permisions 0o644
+                fd = os.open(file_path, os.O_APPEND | os.O_CREAT | os.O_TRUNC , 0o644) # write only, create if not exist, truncate if exists, permisions 0o644
                 os.dup2(fd, 1)
                 os.close(fd)
 
@@ -171,13 +171,13 @@ class Shell:
         else:
             os.waitpid(pid, 0)
 
-    def execute_redirect_err(self, command, args, file_path):
+    def execute_redirect_err(self, command, args, file_path, append):
 
         if command in self.builtins:
             org_output = sys.stderr # storing reference to the stderr path 
 
             try:
-                with open(file_path, 'w') as f:
+                with open(file_path, 'a' if append else 'w') as f:
                     sys.stderr = f
                     self.execute_command(command, args)
 
@@ -186,7 +186,7 @@ class Shell:
 
         else:
             if self.find_in_path(command):
-                self.execute_external_redirect_err(command, args, file_path)
+                self.execute_external_redirect_err(command, args, file_path, append)
             else:
                 print(f"{command}: command not found", file = sys.stderr)
 
@@ -196,7 +196,7 @@ class Shell:
 
         if pid == 0:
             try:
-                fd = os.open(file_path, os.O_WRONLY | os.O_TRUNC | os.O_CREAT, 0o644)
+                fd = os.open(file_path, os.O_APPEND | os.O_TRUNC | os.O_CREAT, 0o644)
                 os.dup2(fd, 2)
                 os.close(fd)
 
@@ -222,9 +222,10 @@ class Shell:
 
                 parts = self.command_parser(user_input)
 
-                if ">" in parts or "1>" in parts or "2>" in parts: # for redirection 
+                if (">" in parts) or ("1>" in parts) or (">>" in parts) or ("1>>" in parts) or ("2>" in parts) or ("2>>" in parts): # for redirection 
                     case_out = False
                     case_err = False
+                    append = False
 
                     if ">" in parts:
                         ind = parts.index(">")
@@ -232,9 +233,21 @@ class Shell:
                     elif "1>" in parts:
                         ind = parts.index("1>")
                         case_out = True
-                    else:
+                    elif "1>>" in parts:
+                        ind = parts.index("1>>")
+                        case_out = True
+                        append = True
+                    elif ">>" in parts:
+                        ind = parts.index(">>")
+                        case_out = True
+                        append = True
+                    elif "2>" in parts:
                         ind = parts.index("2>")
                         case_err = True
+                    else:
+                        ind = parts.index("2>>")
+                        case_err = True
+                        append = True
 
                     command_part = parts[: ind]
                     path_part = parts[ind + 1] if ind + 1 < len(parts) else None # edge case
@@ -248,9 +261,9 @@ class Shell:
                         continue
                     
                     if case_out:
-                        self.execute_and_redirect(command_part[0], command_part[1:], path_part)
+                        self.execute_and_redirect(command_part[0], command_part[1:], path_part, append)
                     else:
-                        self.execute_redirect_err(command_part[0], command_part[1:], path_part)
+                        self.execute_redirect_err(command_part[0], command_part[1:], path_part, append)
 
                 else: # without redirection
 
