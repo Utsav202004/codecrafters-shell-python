@@ -295,10 +295,9 @@ class Shell:
 
         while True:
             try:
-                sys.stdout.write("$ ") # displaying prompt
-                sys.stdout.flush()
+                prompt = "$ "
+                user_input = input(prompt).strip()
 
-                user_input = input().strip()
                 if not user_input:  # empty input
                     continue
 
