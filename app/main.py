@@ -261,6 +261,9 @@ class Shell:
         
             matches = [cmd for cmd in self.builtins.keys() if cmd.startswith(text)]
 
+            if state == 0 and len(matches) == 0:
+                print('\x07', end='', flush=True)
+
             if state < len(matches):
                 return matches[state] + " "
             
