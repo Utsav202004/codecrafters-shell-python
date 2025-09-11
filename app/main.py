@@ -284,7 +284,10 @@ class Shell:
                 self.matches = []
 
         if state < len(self.matches):
-            return self.matches[state]
+            if len(self.matches) == 1:
+                return self.matches[state] + " " # adding a space for single match
+            else:
+                return self.matches[state]
             
         return None
     
