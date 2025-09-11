@@ -132,7 +132,7 @@ class Shell:
 
         return words
     
-    def execute_and_redirect(self, command, args, file_path):
+    def execute_and_redirect(self, command, args, file_path): # for > and 1>
 
         if command in self.builtins: # stdout works for parent process, non-builtin -> child process
             org_output = sys.stdout # ref to the original std output
@@ -152,7 +152,7 @@ class Shell:
             else: # edge case
                 print(f"{command}: command not found")
 
-    def execute_external_and_redirect(self, command, args, file_path):
+    def execute_external_and_redirect(self, command, args, file_path): # for > and 1> for a executible path
 
         pid = os.fork()
 
@@ -166,6 +166,44 @@ class Shell:
 
             except OSError:
                 print(f"{command}: command not found", file= sys.stderr)
+                os._exit(127)
+
+        else:
+            os.waitpid(pid, 0)
+
+    def execute_redirect_err(self, command, args, file_path):
+
+        if command in self.builtins:
+            org_output = sys.stderr # storing reference to the stderr path 
+
+            try:
+                with open(file_path, 'w') as f:
+                    f = sys.stderr
+
+                self.execute_command(command, args)
+
+            finally:
+                sys.stderr = org_output
+
+        else:
+            if self.find_in_path(command):
+                self.execute_external_redirect_err(command, args, file_path)
+            else:
+                print(f"{command}: command not found", file = sys.stderr)
+
+    def execute_external_redirect_err(command, args, file_path):
+
+        pid = os.fork()
+
+        if pid == 0:
+            try:
+                fd = os.open(file_path, os.O_WRONLY | os.O_TRUNC | os.O_CREAT, 0o644)
+                os.dup2(fd, 2)
+                os.close(fd)
+
+                os.execvp(file_path, command, [command] + args)
+            except OSError:
+                print(f"{command}: command not found", file = sys.stderr)
                 os._exit(127)
 
         else:
@@ -185,8 +223,19 @@ class Shell:
 
                 parts = self.command_parser(user_input)
 
-                if ">" in parts or "1>" in parts: # for redirection 
-                    ind = parts.index(">") if ">" in parts else parts.index("1>")
+                if ">" in parts or "1>" in parts or "2>" in parts: # for redirection 
+                    case_out = False
+                    case_err = False
+
+                    if ">" in parts:
+                        ind = parts.index(">")
+                        case_out = True
+                    elif "1>" in parts:
+                        ind = parts.index("1>")
+                        case_out = True
+                    else:
+                        ind = parts.index("2>")
+                        case_err = True
 
                     command_part = parts[: ind]
                     path_part = parts[ind + 1] if ind + 1 < len(parts) else None # edge case
@@ -198,8 +247,14 @@ class Shell:
                     if not path_part: # edge case - missing path part
                         print("syntax error: missing path", file = sys.stderr)
                         continue
+                    
+                    if case_out:
+                        self.execute_and_redirect(command_part[0], command_part[1:], path_part)
+                    else:
+                        self.execute_redirect_err(command_part[0], command_part[1:], path_part)
 
-                    self.execute_and_redirect(command_part[0], command_part[1:], path_part)
+                elif "2>" in parts:
+                    ind = parts.index("2>")
 
                 else: # without redirection
 
