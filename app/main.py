@@ -1,11 +1,32 @@
+'''
+Build your own Shell project - Implementing in python
+
+Worked on:
+> builtins
+> quoting
+> I/O redirection
+
+'''
+
 import os
 import sys
+from typing import List, Tuple, Optional
 
 class Shell:
 
+    # Redirection mapping - 'operator' : (stdout/err, true/false)
+    REDIRECT_OPS = {
+        '>': (1, False),
+        '1>': (1, False),
+        '>>': (1, True),
+        '1>>': (1, True),
+        '2>': (2, False),
+        '2>>': (2, True),
+    }
+
     def __init__(self):
         
-        self.builtins = {   # storing builtin functions as instance var
+        self.builtins = {   # storing builtin functions
             'echo' : self.builtin_echo,
             'exit' : self.builtin_exit,
             'pwd' : self.builtin_pwd,
@@ -13,19 +34,19 @@ class Shell:
             'cd' : self.builtin_cd,
         }
 
-    def builtin_echo(self, *args):
-        if not args:
-            return
+    # --- Builtin Commands ---
+
+    def builtin_echo(self, *args): # printing arg sep by spaces
         print(" ".join(args))
 
-    def builtin_exit(self, *args):
+    def builtin_exit(self, *args): # exit shell - with given exit code
         exit_code = int(args[0]) if args else 0
         sys.exit(exit_code)
 
-    def builtin_pwd(self, *args):
+    def builtin_pwd(self, *args): # printing working directory
         print(os.getcwd())
 
-    def builtin_type(self, *args):
+    def builtin_type(self, *args): # showing type of command
         if not args:
             return
         
@@ -37,7 +58,7 @@ class Shell:
         else:
             print(f"{cmd}: not found")
 
-    def builtin_cd(self, *args):
+    def builtin_cd(self, *args): # changing directory
         path = args[0] if args else "~"
         expanded_path = os.path.expanduser(path)
 
@@ -48,16 +69,31 @@ class Shell:
         except PermissionError:
             print(f"cd: {path}: Permission denied", file=sys.stderr)
 
-    def find_in_path(self, command):
-        path_dirs = os.environ.get('PATH', '').split(":")
+    # --- Command Execution ---
 
-        for directory in path_dirs:
+    def find_in_path(self, command: str) -> Optional[str]:    # searching for executable in path directories
+        for directory in os.environ.get('PATH', '').split(":"):
             full_path = os.path.join(directory, command)
             if os.path.isfile(full_path) and os.access(full_path, os.X_OK):
                 return full_path
         return None
     
-    def execute_external(self, command, args):
+    def execute_command(self, command: str, args:List[str], redirect_info: Optional[Tuple[str, int, bool]] = None):
+        # Executing command with optional redirections
+        
+        if redirect_info:
+            file_path, fd_num, append_mode = redirect_info
+            self._execute_with_redirect(command, args, file_path, fd_num, append_mode)
+        else:
+            # normal exe without redir
+            if command in self.builtins:
+                self.builtins[command](*args)
+            elif self.find_in_path(command):
+                self._execute_external(command, args)
+            else:
+                print(f"{command}: command not found", file=sys.stderr)
+
+    def _execute_external(self, command: str, args: List[str]):
         pid = os.fork()
 
         if pid == 0:
@@ -67,19 +103,57 @@ class Shell:
                 print(f"{command}: command not found", file=sys.stderr)
                 os._exit(127)
         else:
-            os.waitpid(pid, 0)
+            os.waitpid(pid, 0) 
 
-
-    def execute_command(self, command, args):
+    def _execute_with_redirect(self, command: str, args: List[str], file_path: str, fd_num: int, append: bool):
+        # executing command with output redirection
         if command in self.builtins:
-                    method = self.builtins[command]
-                    method(*args)
+            self._redirect_builtin(command, args, file_path, fd_num, append)
         elif self.find_in_path(command):
-            self.execute_external(command, args)
+            self._redirect_external(command, args, file_path, fd_num, append)
         else:
-            print(f"{command}: command not found")
+            print(f"{command}: command not found", file=sys.stderr)
 
-    def command_parser(self, user_input): # adressing quotes
+    def _redirect_builtin(self, command: str, args: List[str], file_path: str, fd_num: int, append: bool):
+        # Redirect Builtin command output
+        original = sys.stdout if fd_num == 1 else sys.stderr # changing std reference
+
+        try:
+            with open(file_path, 'a' if append else 'w') as f:
+                if fd_num == 1:
+                    sys.stdout = f  # shifting pipe output
+                else:
+                    sys.stderr = f
+                
+                self.builtins[command](*args)
+        finally:
+            if fd_num == 1:
+                sys.stdout = original # restoring default pipe str
+            else:
+                sys.stderr = original
+    
+    def _redirect_external(self, command: str, args: List[str], file_path: str, fd_num: int, append: bool) -> None:
+        # Redirect external command output
+        pid = os.fork()
+
+        if pid == 0:    # child process
+            try:
+                flags = os.O_WRONLY | os.O_CREAT # flags needed in both the cases
+                flags |= os.O_APPEND if append else os.O_TRUNC
+
+                fd = os.open(file_path, flags, 0o644)
+                os.dup2(fd, fd_num)
+                os.close(fd)
+
+                os.execvp(command, [command] + args) # executing external command
+            except OSError:
+                print(f"{command}: command not found", file=sys.stderr)
+                os._exit(127)
+        else:   # parent process
+            os.waitpid(pid, 0)
+        
+    # --- parsing ---
+    def parse_command_line(self, user_input: str) -> List[str]: # adressing quotes
         curr_word = []
         words = []
         in_squotes = False
@@ -131,146 +205,62 @@ class Shell:
             words.append(''.join(curr_word))
 
         return words
-    
-    def execute_and_redirect(self, command, args, file_path, append): # for > and 1>
+    def find_redirection(self, parts: List[str]) -> Tuple[Optional[str], List[str], Optional[Tuple[str, int, bool]]]:
+        '''
+        find and parse redirection operators in command parts
+        tuple (command(optional as null), argumnets list, tuple of path(optional), file descriptor, and the append yes no)
+        finding and parsing any redirection operator
+        '''
+        for op in self.REDIRECT_OPS:
+            if op in parts:
+                index = parts.index(op)
 
-        if command in self.builtins: # stdout works for parent process, non-builtin -> child process
-            org_output = sys.stdout # ref to the original std output
+                # edge cases - working on syntax - missing command or target path
+                if index == 0:
+                    print("syntax error: missing command", file=sys.stderr)
+                    return None, [], None
+                
+                if index + 1 >= len(parts):
+                    print("syntax error: missing target path", file=sys.stderr)
+                    return None, [], None
+            
+                # Extracting the info 
+                command = parts[0]
+                args = parts[1: index]
+                file_path = parts[index + 1]
+                fd_num, append = self.REDIRECT_OPS[op]
 
-            try:
-                with open(file_path, 'a' if append else 'w') as f:
-                    sys.stdout = f  # changing the pipe to desired location
-
-                    self.execute_command(command, args)
-
-            finally:
-                sys.stdout = org_output # restoring the pipe
-
-        else:
-            if self.find_in_path(command): # create a sep function for path executibles
-                self.execute_external_and_redirect(command, args, file_path, append)
-            else: # edge case
-                print(f"{command}: command not found")
-
-    def execute_external_and_redirect(self, command, args, file_path, append): # for > and 1> for a executible path
-
-        pid = os.fork()
-
-        if pid == 0: # child process
-            try:
-                fd = os.open(file_path, (os.O_APPEND | os.O_CREAT | os.O_WRONLY) if append else (os.O_TRUNC | os.O_WRONLY | os.O_CREAT) , 0o644) # write only, create if not exist, truncate if exists, permisions 0o644
-                os.dup2(fd, 1)
-                os.close(fd)
-
-                os.execvp(command, [command] + args)
-
-            except OSError:
-                print(f"{command}: command not found", file= sys.stderr)
-                os._exit(127)
-
-        else:
-            os.waitpid(pid, 0)
-
-    def execute_redirect_err(self, command, args, file_path, append): # for 2>
-
-        if command in self.builtins:
-            org_output = sys.stderr # storing reference to the stderr path 
-
-            try:
-                with open(file_path, 'a' if append else 'w') as f:
-                    sys.stderr = f
-                    self.execute_command(command, args)
-
-            finally:
-                sys.stderr = org_output
-
-        else:
-            if self.find_in_path(command):
-                self.execute_external_redirect_err(command, args, file_path, append)
-            else:
-                print(f"{command}: command not found", file = sys.stderr)
-
-    def execute_external_redirect_err(self, command, args, file_path, append): # for 2> for executable path
-
-        pid = os.fork()
-
-        if pid == 0:
-            try:
-                fd = os.open(file_path, (os.O_APPEND | os.O_WRONLY | os.O_CREAT) if append else (os.O_TRUNC | os.O_WRONLY | os.O_CREAT), 0o644)
-                os.dup2(fd, 2)
-                os.close(fd)
-
-                os.execvp(command, [command] + args)
-            except OSError:
-                print(f"{command}: command not found", file = sys.stderr)
-                os._exit(127)
-
-        else:
-            os.waitpid(pid, 0)
+                return command, args, (file_path, fd_num, append)
         
-
+        # No redirection case
+        if parts:
+            return parts[0], parts[1:], None
+        return None, [], None # hanling all edge cases
+    
+    # --- Main Loop ---
     def run(self):  # Main loop - the repl 
 
         while True:
             try:
-                sys.stdout.write("$ ")
+                sys.stdout.write("$ ") # displaying prompt
+                sys.stdout.flush()
 
                 user_input = input().strip()
-
                 if not user_input:  # empty input
                     continue
 
-                parts = self.command_parser(user_input)
+                parts = self.parse_command_line(user_input) # parsing command line
+                if not parts:
+                    continue
 
-                if (">" in parts) or ("1>" in parts) or (">>" in parts) or ("1>>" in parts) or ("2>" in parts) or ("2>>" in parts): # for redirection 
-                    case_out = False
-                    case_err = False
-                    append = False
-
-                    if ">" in parts:
-                        ind = parts.index(">")
-                        case_out = True
-                    elif "1>" in parts:
-                        ind = parts.index("1>")
-                        case_out = True
-                    elif "1>>" in parts:
-                        ind = parts.index("1>>")
-                        case_out = True
-                        append = True
-                    elif ">>" in parts:
-                        ind = parts.index(">>")
-                        case_out = True
-                        append = True
-                    elif "2>" in parts:
-                        ind = parts.index("2>")
-                        case_err = True
-                    else:
-                        ind = parts.index("2>>")
-                        case_err = True
-                        append = True
-
-                    command_part = parts[: ind]
-                    path_part = parts[ind + 1] if ind + 1 < len(parts) else None # edge case
-
-                    if not command_part: # edge case - missing command part
-                        print("syntax error: missing command part", file = sys.stderr)
-                        continue
-
-                    if not path_part: # edge case - missing path part
-                        print("syntax error: missing path", file = sys.stderr)
-                        continue
-                    
-                    if case_out:
-                        self.execute_and_redirect(command_part[0], command_part[1:], path_part, append)
-                    else:
-                        self.execute_redirect_err(command_part[0], command_part[1:], path_part, append)
-
-                else: # without redirection
-
-                    command = parts[0]
-                    args = parts[1:]
-                    self.execute_command(command, args)
+                # configuring redirection if any
+                command, args, redirect_info = self.find_redirection(parts)
+                if command is None:
+                    continue
         
+                self.execute_command(command, args, redirect_info)
+
+
             except EOFError: # ctrlD usage
                 print()
                 break
@@ -278,6 +268,9 @@ class Shell:
                 print()
                 continue
 
-if __name__ == "__main__":
+def main():
     shell = Shell()
     shell.run()
+
+if __name__ == "__main__":
+    main()
