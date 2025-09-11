@@ -262,7 +262,7 @@ class Shell:
             matches = [cmd for cmd in self.builtins.keys() if cmd.startswith(text)]
 
             if state < len(matches):
-                return matches[state]
+                return matches[state] + " "
             
         return None
     
