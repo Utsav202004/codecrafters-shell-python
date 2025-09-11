@@ -247,7 +247,7 @@ class Shell:
 
     # -- Autocompletion -- 
 
-    def setup_autocompletiion(self):
+    def setup_autocompletion(self):
 
         readline.set_completer(self.comlete_command)    # setting completer function
         readline.parse_and_bind('tab: complete')    # binding
