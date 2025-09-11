@@ -275,7 +275,7 @@ class Shell:
                         except (PermissionError, OSError):
                             continue
 
-                self.matches = [cmd for cmd in sorted(all_commands) if cmd.startswith(text)]
+                self.matches = sorted([cmd for cmd in all_commands if cmd.startswith(text)])
 
                 if not self.matches: # this is for no matches
                     print('\x07', end='', flush=True)
