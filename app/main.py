@@ -284,7 +284,7 @@ class Shell:
                 self.matches = []
 
         if state < len(self.matches):
-            return self.matches[state] + " "
+            return self.matches[state]
             
         return None
     
