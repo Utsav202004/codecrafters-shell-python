@@ -178,7 +178,7 @@ class Shell:
 
             try:
                 with open(file_path, 'w') as f:
-                    f = sys.stderr
+                    sys.stderr = f
 
                 self.execute_command(command, args)
 
