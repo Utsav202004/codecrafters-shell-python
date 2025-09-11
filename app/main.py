@@ -158,7 +158,7 @@ class Shell:
 
         if pid == 0: # child process
             try:
-                fd = os.open(file_path, os.O_APPEND | os.O_CREAT | os.O_WRONLY , 0o644) # write only, create if not exist, truncate if exists, permisions 0o644
+                fd = os.open(file_path, (os.O_APPEND | os.O_CREAT | os.O_WRONLY) if append else (os.O_TRUNC | os.O_WRONLY | os.O_CREAT) , 0o644) # write only, create if not exist, truncate if exists, permisions 0o644
                 os.dup2(fd, 1)
                 os.close(fd)
 
@@ -171,7 +171,7 @@ class Shell:
         else:
             os.waitpid(pid, 0)
 
-    def execute_redirect_err(self, command, args, file_path, append):
+    def execute_redirect_err(self, command, args, file_path, append): # for 2>
 
         if command in self.builtins:
             org_output = sys.stderr # storing reference to the stderr path 
@@ -190,13 +190,13 @@ class Shell:
             else:
                 print(f"{command}: command not found", file = sys.stderr)
 
-    def execute_external_redirect_err(self, command, args, file_path):
+    def execute_external_redirect_err(self, command, args, file_path, append): # for 2> for executable path
 
         pid = os.fork()
 
         if pid == 0:
             try:
-                fd = os.open(file_path, os.O_APPEND | os.O_WRONLY | os.O_CREAT, 0o644)
+                fd = os.open(file_path, (os.O_APPEND | os.O_WRONLY | os.O_CREAT) if append else (os.O_TRUNC | os.O_WRONLY | os.O_CREAT), 0o644)
                 os.dup2(fd, 2)
                 os.close(fd)
 
