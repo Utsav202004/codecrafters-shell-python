@@ -293,6 +293,7 @@ class Shell:
                 self.matches = []
 
         if state == 1:
+            print()
             print(*self.matches, sep="  ", end="\n")
             print(line, end='')
             
