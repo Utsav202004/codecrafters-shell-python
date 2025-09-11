@@ -255,9 +255,9 @@ class Shell:
 
     def complete_command(self, text: str, state: int) -> Optional[str]:
 
-        if state == 0:
-
-            line = readline.get_line_buffer()
+        line = readline.get_line_buffer()
+        
+        if state == 0: # enabling 
 
             if not line.strip() or line.strip() == text:
                 all_commands = set(self.builtins.keys())
@@ -278,15 +278,23 @@ class Shell:
 
                 self.matches = [cmd for cmd in sorted(all_commands) if cmd.startswith(text)]
 
-                if not self.matches:
+                if not self.matches: # this is for no matches
                     print('\x07', end='', flush=True)
+
+                # for one match
+                if len(self.matches) == 1:
+                    return self.matches[state] + " "
+
+                # for more than one match
+                if len(self.matches) > 1:
+                    print('\a', end='', flush=True)
 
             else:
                 self.matches = []
 
-
-        if state < len(self.matches):
-                return self.matches[state] + " "
+        if state == 1:
+            print(*self.matches, sep="  ", end="\n")
+            print(line, end='')
             
         return None
     
