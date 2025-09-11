@@ -11,6 +11,7 @@ Worked on:
 import os
 import sys
 from typing import List, Tuple, Optional
+import readline
 
 class Shell:
 
@@ -33,6 +34,8 @@ class Shell:
             'type' : self.builtin_type,
             'cd' : self.builtin_cd,
         }
+
+        self.setup_autocomplete() # making a autocomplete function
 
     # --- Builtin Commands ---
 
@@ -68,6 +71,7 @@ class Shell:
             print(f"cd: {path}: No such file or directory", file=sys.stderr)
         except PermissionError:
             print(f"cd: {path}: Permission denied", file=sys.stderr)
+
 
     # --- Command Execution ---
 
@@ -151,8 +155,10 @@ class Shell:
                 os._exit(127)
         else:   # parent process
             os.waitpid(pid, 0)
-        
+
+
     # --- parsing ---
+
     def parse_command_line(self, user_input: str) -> List[str]: # adressing quotes
         curr_word = []
         words = []
@@ -205,7 +211,8 @@ class Shell:
             words.append(''.join(curr_word))
 
         return words
-    def find_redirection(self, parts: List[str]) -> Tuple[Optional[str], List[str], Optional[Tuple[str, int, bool]]]:
+    
+    def find_redirection(self, parts: List[str]) -> Tuple[ Optional[str], List[str], Optional[Tuple[str, int, bool]]]:
         '''
         find and parse redirection operators in command parts
         tuple (command(optional as null), argumnets list, tuple of path(optional), file descriptor, and the append yes no)
@@ -236,8 +243,32 @@ class Shell:
         if parts:
             return parts[0], parts[1:], None
         return None, [], None # hanling all edge cases
+
+
+    # -- Autocompletion -- 
+
+    def setup_autocompletiion(self):
+
+        readline.set_completer(self.comlete_command)    # setting completer function
+        readline.parse_and_bind('tab: complete')    # binding
+        readline.set_completer_delims(' \t\n;')     # delimiter
+
+    def complete_command(self, text, state):
+
+        line = readline.get_line_buffer()
+
+        if not line.strip() or line.strip() == text:
+        
+            matches = [cmd for cmd in self.builtins.keys() if cmd.startswith(text)]
+
+            if state < len(matches):
+                return matches[state]
+            
+        return None
     
+
     # --- Main Loop ---
+    
     def run(self):  # Main loop - the repl 
 
         while True:
