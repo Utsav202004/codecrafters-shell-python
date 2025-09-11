@@ -249,7 +249,7 @@ class Shell:
 
     def setup_autocompletion(self):
 
-        readline.set_completer(self.comlete_command)    # setting completer function
+        readline.set_completer(self.complete_command)    # setting completer function
         readline.parse_and_bind('tab: complete')    # binding
         readline.set_completer_delims(' \t\n;')     # delimiter
 
