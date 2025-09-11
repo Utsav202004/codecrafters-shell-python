@@ -201,7 +201,7 @@ class Shell:
                 os.dup2(fd, 2)
                 os.close(fd)
 
-                os.execvp(file_path, command, [command] + args)
+                os.execvp(command, [command] + args)
             except OSError:
                 print(f"{command}: command not found", file = sys.stderr)
                 os._exit(127)
