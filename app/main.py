@@ -179,8 +179,7 @@ class Shell:
             try:
                 with open(file_path, 'w') as f:
                     sys.stderr = f
-
-                self.execute_command(command, args)
+                    self.execute_command(command, args)
 
             finally:
                 sys.stderr = org_output
@@ -191,7 +190,7 @@ class Shell:
             else:
                 print(f"{command}: command not found", file = sys.stderr)
 
-    def execute_external_redirect_err(command, args, file_path):
+    def execute_external_redirect_err(self, command, args, file_path):
 
         pid = os.fork()
 
@@ -252,9 +251,6 @@ class Shell:
                         self.execute_and_redirect(command_part[0], command_part[1:], path_part)
                     else:
                         self.execute_redirect_err(command_part[0], command_part[1:], path_part)
-
-                elif "2>" in parts:
-                    ind = parts.index("2>")
 
                 else: # without redirection
 
