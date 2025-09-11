@@ -254,16 +254,15 @@ class Shell:
         readline.set_completer_delims(' \t\n;')     # delimiter
 
     def complete_command(self, text: str, state: int) -> Optional[str]:
-
-        line = readline.get_line_buffer()
         
         if state == 0: # enabling 
+            line = readline.get_line_buffer()
 
             if not line.strip() or line.strip() == text:
                 all_commands = set(self.builtins.keys())
 
-                directories = os.environ.get('PATH', '').split(':') # get ensures a safe output if the key not present, environ is a dictionary with 'PATH' as a key
-                for dir in directories:
+                for dir in os.environ.get('PATH', '').split(':'):
+                # get ensures a safe output if the key not present, environ is a dictionary with 'PATH' as a key
                     if os.path.isdir(dir):
                         
                         try:
@@ -281,21 +280,11 @@ class Shell:
                 if not self.matches: # this is for no matches
                     print('\x07', end='', flush=True)
 
-                # for one match
-                if len(self.matches) == 1:
-                    return self.matches[state] + " "
-
-                # for more than one match
-                if len(self.matches) > 1:
-                    print('\a', end='', flush=True)
-
             else:
                 self.matches = []
 
-        if state == 1:
-            print()
-            print(*self.matches, sep="  ", end="\n")
-            print(line, end='')
+        if state < len(self.matches):
+            return self.matches[state] + " "
             
         return None
     
