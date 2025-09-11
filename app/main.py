@@ -259,7 +259,7 @@ class Shell:
 
             line = readline.get_line_buffer()
 
-            if not line.strip() or line.strip == text:
+            if not line.strip() or line.strip() == text:
                 all_commands = set(self.builtins.keys())
 
                 directories = os.environ.get('PATH', '').split(':') # get ensures a safe output if the key not present, environ is a dictionary with 'PATH' as a key
@@ -268,7 +268,7 @@ class Shell:
                         
                         try:
                             for filename in os.listdir(dir):
-                                full_path = dir + filename
+                                full_path = os.path.join(dir, filename)
 
                                 if os.access(full_path, os.X_OK): # checking execution perm
                                     all_commands.add(filename)
