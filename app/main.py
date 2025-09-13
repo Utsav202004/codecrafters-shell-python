@@ -292,7 +292,8 @@ class Shell:
         return None
     
     # ----- Pipeline -----
-
+    # works for both buitin and path exectuble commands
+    
     def execute_pipeline(self, parts: List[str]):
         # Handling execution of more than one pipeline
         try:
