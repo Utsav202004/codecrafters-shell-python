@@ -293,7 +293,7 @@ class Shell:
     
     # ----- Pipeline -----
     # works for both buitin and path exectuble commands
-    
+
     def execute_pipeline(self, parts: List[str]):
         # Handling execution of more than one pipeline
         try:
@@ -332,9 +332,9 @@ class Shell:
 
                 if pid == 0:
 
-                    if in_fd != sys.stdin.fileno(): # redirecting inputs after the first command - the stdin command
-                        os.dup2(in_fd, sys.stdin.fileno())
-                        os.close(in_fd)
+                    if in_fd != sys.stdin.fileno(): # this will be true only when i = 0, on the very first command
+                        os.dup2(in_fd, sys.stdin.fileno()) # both in_fd and sys.stdin point to same file descriptor 0 now
+                        os.close(in_fd) # so we can close the in_fd fd to prevent any deadlocks 
 
                     if i < len(commands) - 1: # if not the last command, output goes to the pipe
                         os.dup2(write_fd, sys.stdout.fileno())
