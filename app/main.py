@@ -1,7 +1,7 @@
 '''
 Build your own Shell project - Implementing in python
 
-Worked on:
+Features i have Worked on till now :
 > builtins
 > quoting
 > I/O redirection
@@ -291,8 +291,82 @@ class Shell:
             
         return None
     
+    # ----- Pipeline -----
 
-    # --- Main Loop ---
+    def execute_pipeline(self, parts: List[str]):
+        # Handling execution of more than one pipeline
+        try:
+            # Workign on Commands first
+            current_command = []
+            commands = []
+
+            for part in parts:
+                if part == "|":
+                    if not current_command: # edge case
+                        print("Syntax error: Empty command in pipe", file=sys.stderr)
+                        return
+                    
+                    else:
+                        commands.append(current_command)
+                        current_command = []
+                        
+                else:
+                    current_command.append(part)
+            
+            if current_command: # adding the last command
+                commands.append(current_command)
+
+            if len(commands) < 2: # edge case
+                print("Atleast two command required with a pipe operator.", file=sys.stderr)
+                return
+            
+            # Working on the Pipeline now
+            child_pids = []
+            in_fd = sys.stdin.fileno() # first input is std input
+
+            for i, command_parts in enumerate(commands):
+                read_fd, write_fd = os.pipe() # new pipe for a process
+
+                pid = os.fork()
+
+                if pid == 0:
+
+                    if in_fd != sys.stdin.fileno(): # redirecting inputs after the first command - the stdin command
+                        os.dup2(in_fd, sys.stdin.fileno())
+                        os.close(in_fd)
+
+                    if i < len(commands) - 1: # if not the last command, output goes to the pipe
+                        os.dup2(write_fd, sys.stdout.fileno())
+
+                    # closing unwanted fd's to avoid deadlocks
+                    os.close(read_fd)
+                    os.close(write_fd)
+
+                    # now we can work on the specific command - and also take in consideration redirection if any
+                    cmd, args, redirect_info = self.find_redirection(command_parts)
+                    if cmd:
+                        self.execute_command(cmd, args, redirect_info)
+
+                    os._exit(1) # exiting if the command execution dails for any reason
+
+                elif pid > 0:   # parent process
+
+                    child_pids.append(pid) # storing all the child pids to check later
+                    
+                    os.close(write_fd) # clsoing the write end, not needed
+
+                    if in_fd != sys.stdin.fileno(): # closing the previous read end
+                        os.close(in_fd)
+
+                    in_fd = read_fd # current read end becomes the input for the next
+
+            for pid in child_pids: # waiting for all the child process to finish
+                os.waitpid(pid, 0)
+
+        except Exception as e: # any other error
+            print(f"Pipeline execution error: {e}", file=sys.stderr) 
+
+    # ----- Main Loop -----
     
     def run(self):  # Main loop - the repl 
 
@@ -308,12 +382,15 @@ class Shell:
                 if not parts:
                     continue
 
-                # configuring redirection if any
-                command, args, redirect_info = self.find_redirection(parts)
-                if command is None:
-                    continue
-        
-                self.execute_command(command, args, redirect_info)
+                if "|" in parts: 
+                    self.execute_pipeline(parts)
+                else: 
+                    # configuring redirection if any
+                    command, args, redirect_info = self.find_redirection(parts)
+                    if command is None:
+                        continue
+            
+                    self.execute_command(command, args, redirect_info)
 
 
             except EOFError: # ctrlD usage
