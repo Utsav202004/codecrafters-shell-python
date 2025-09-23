@@ -38,13 +38,16 @@ class Shell:
 
         try:
             histfile = os.environ.get('HISTFILE')
-            with open(histfile, 'r') as f:
-                lines = [line.strip() for line in f.readlines() if line.strip()]
-                self.history = lines
+
+            if os.path.isfile(histfile):
+                with open(histfile, 'r') as f:
+                    lines = [line.strip() for line in f.readlines() if line.strip()]
+                    self.history = lines
+            else:
+                self.history: List[str] = []
 
         except Exception as e:
-            print(f"history : error accessig the memory for history : {e}", file=sys.stderr)
-            self.history: List[str] = []    
+            print(f"history : error accessig the memory for history : {e}", file=sys.stderr)    
 
         self.setup_autocomplete() # making a autocomplete function
 
