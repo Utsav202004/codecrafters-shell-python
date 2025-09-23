@@ -76,17 +76,28 @@ class Shell:
             print(f"cd: {path}: Permission denied", file=sys.stderr)
 
     def builtin_history(self, *args):
-        history_to_print = self.history
+        history_to_print = self.history # to handle case with no n provided
 
         if args:
-            try:
-                n = int(args[0])
-                history_to_print = self.history[-n:]
+            if args[0].isdigit():
+                try:
+                    n = int(args[0])
+                    history_to_print = self.history[-n:]
 
-            except (ValueError, IndexError):
-                print("history: invalid argument", file=sys.stderr)
-                return
+                except (ValueError, IndexError):
+                    print("history: invalid argument", file=sys.stderr)
+                    return
             
+            elif args[0][0] == "-":
+                match args[0][1]:
+                    case 'r':
+                        try:
+                            with open(args[1], 'r') as f:
+                                self.history.append(f.readlines())
+                        except Exception:
+                            print("error", file=sys.stderr)
+                            return
+
         start_number = len(self.history) - len(history_to_print) + 1
 
         for i, cmd in enumerate(history_to_print, start_number):
