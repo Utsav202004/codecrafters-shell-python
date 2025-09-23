@@ -57,6 +57,19 @@ class Shell:
         print(" ".join(args))
 
     def builtin_exit(self, *args): # exit shell - with given exit code
+
+        # adding the memory history to the file specified
+        histfile = os.environ.get("HISTFILE")
+
+        if histfile and os.path.isfile(histfile):
+            try:
+                with open(histfile, 'a') as f:
+                    for line in self.history:
+                        f.write(line + '\n')
+
+            except Exception as e:
+                print(f"history: error with writing memory to history file : {e}")
+
         exit_code = int(args[0]) if args else 0
         sys.exit(exit_code)
 
