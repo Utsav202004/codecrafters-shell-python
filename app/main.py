@@ -76,31 +76,43 @@ class Shell:
             print(f"cd: {path}: Permission denied", file=sys.stderr)
 
     def builtin_history(self, *args):
-        history_to_print = self.history # to handle case with no n provided
 
-        if args:
-            if args[0].isdigit():
-                try:
-                    n = int(args[0])
-                    history_to_print = self.history[-n:]
+        if not args:
+            # printing full history when no arguments provided
+            history_to_print = self.history
+            start_number = 1
 
-                except (ValueError, IndexError):
-                    print("history: invalid argument", file=sys.stderr)
-                    return
+        elif args[0].isdigit(): # history <n>
+            try:
+                n = int(args[0])
+                history_to_print = self.history[-n:]
+                start_number = len(self.history) - len(history_to_print) + 1
+            except (ValueError, IndexError):
+                print("history: invalid argument", file=sys.stderr)
+                return
             
-            elif args[0][0] == "-":
-                match args[0][1]:
-                    case 'r':
-                        try:
-                            with open(args[1], 'r') as f:
-                                self.history.extend(f.readlines())
-                                return
-                        except Exception:
-                            print("error", file=sys.stderr)
-                            return
+        else:
+            match args[0]:
+                case "-r":
+                    if len(args) < 2:
+                        print("history: option requires an argument", file=sys.stderr)
+                        return
+                    file_path = args[1]
 
-        start_number = len(self.history) - len(history_to_print) + 1
+                    try:
+                        with open(file_path, 'r') as f:
+                            lines = [line.strip() for line in f.readline() if line.strip()]
+                            self.history.extend(lines)
+                    except FileNotFoundError:
+                        print(f"history: {file_path}: no such file or directory", file=sys.stderr)
 
+                    except Exception as e:
+                        print(f"history: error reading file: {e}", file=sys.stderr)
+                    return
+                case _: # any other invalid options
+                    print(f"history: invalid option -- '{args[0]}'", file=sys.stderr)
+                    return
+                
         for i, cmd in enumerate(history_to_print, start_number):
             print(f"{i} {cmd}")
 
