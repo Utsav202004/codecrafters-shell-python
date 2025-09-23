@@ -39,7 +39,7 @@ class Shell:
         try:
             histfile = os.environ.get('HISTFILE')
 
-            if os.path.isfile(histfile):
+            if histfile and os.path.isfile(histfile):
                 with open(histfile, 'r') as f:
                     lines = [line.strip() for line in f.readlines() if line.strip()]
                     self.history = lines
@@ -122,22 +122,33 @@ class Shell:
                         print(f"history: error reading file: {e}", file=sys.stderr)
                     return
                 
-                case "-w" | "-a":
+                case "-w":
                     if len(args) < 2:
                         print("history: option requires an argument", file=sys.stderr)
                         return
                     file_path = args[1]
 
                     try:
-                        with open(file_path, 'w' if args[0] == "-w" else 'a') as f:
+                        with open(file_path, 'w') as f:
+                            for line in self.history:
+                                f.write(line + '\n') # manually adding a newline at end of each character
+                    except Exception as e:
+                        print(f"history: error writing to file : {e}", file=sys.stderr)
+                    return
+                
+                case "-a":
+                    if len(args) < 2:
+                        print("history: option requires an argument", file=sys.stderr)
+                        return
+                    file_path = args[1]
+                    try:
+                        with open(file_path, 'a') as f:
                             for line in self.history:
                                 f.write(line + '\n') # manually adding a newline at end of each character
                         if args[0] == "-a":
                             self.history = []
-
                     except Exception as e:
                         print(f"history: error writing to file : {e}", file=sys.stderr)
-
                     return
                 
                 case _: # any other invalid options
