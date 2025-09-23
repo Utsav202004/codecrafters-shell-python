@@ -101,14 +101,16 @@ class Shell:
 
                     try:
                         with open(file_path, 'r') as f:
-                            lines = [line.strip() for line in f.readline() if line.strip()]
+                            lines = [line.strip() for line in f.readlines() if line.strip()]
                             self.history.extend(lines)
+
                     except FileNotFoundError:
                         print(f"history: {file_path}: no such file or directory", file=sys.stderr)
 
                     except Exception as e:
                         print(f"history: error reading file: {e}", file=sys.stderr)
                     return
+                
                 case _: # any other invalid options
                     print(f"history: invalid option -- '{args[0]}'", file=sys.stderr)
                     return
