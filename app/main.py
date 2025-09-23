@@ -87,7 +87,7 @@ class Shell:
                 print("history: invalid argument", file=sys.stderr)
                 return
             
-            start_number = len(self.history) - len(history_to_print) + 1
+        start_number = len(self.history) - len(history_to_print) + 1
 
         for i, cmd in enumerate(history_to_print, start_number):
             print(f"{i} {cmd}")
