@@ -121,6 +121,8 @@ class Shell:
                         with open(file_path, 'w' if args[0] == "-w" else 'a') as f:
                             for line in self.history:
                                 f.write(line + '\n') # manually adding a newline at end of each character
+                        if args[0] == "-a":
+                            self.history = []
 
                     except Exception as e:
                         print(f"history: error writing to file : {e}", file=sys.stderr)
