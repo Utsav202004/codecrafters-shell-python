@@ -111,6 +111,19 @@ class Shell:
                         print(f"history: error reading file: {e}", file=sys.stderr)
                     return
                 
+                case "-w":
+                    if len(args) < 2:
+                        print("history: option requires an argument", file=sys.stderr)
+                        return
+                    file_path = args[1]
+
+                    try:
+                        with open(file_path, 'w') as f:
+                            f.writelines(self.history)
+
+                    except Exception as e:
+                        print(f"history: error writing to file : {e}", file=sys.stderr)
+                
                 case _: # any other invalid options
                     print(f"history: invalid option -- '{args[0]}'", file=sys.stderr)
                     return
