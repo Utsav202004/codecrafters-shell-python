@@ -46,6 +46,8 @@ class Shell:
             else:
                 self.history: List[str] = []
 
+            self.initial_history_size = len(self.history)
+
         except Exception as e:
             print(f"history : error accessig the memory for history : {e}", file=sys.stderr)    
 
@@ -63,6 +65,8 @@ class Shell:
 
         if histfile and os.path.isfile(histfile):
             try:
+                new_commands = self.history[self.initial_history_size:]
+                
                 with open(histfile, 'a') as f:
                     for line in self.history:
                         f.write(line + '\n')
