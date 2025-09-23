@@ -119,7 +119,8 @@ class Shell:
 
                     try:
                         with open(file_path, 'w') as f:
-                            f.writelines(self.history)
+                            for line in self.history:
+                                f.write(line + '\n') # manually adding a newline at end of each character
 
                     except Exception as e:
                         print(f"history: error writing to file : {e}", file=sys.stderr)
