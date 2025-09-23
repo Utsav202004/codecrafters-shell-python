@@ -89,8 +89,8 @@ class Shell:
             
             start_number = len(self.history) - len(history_to_print) + 1
 
-            for i, cmd in enumerate(history_to_print, start_number):
-                print(f"{i} {cmd}")
+        for i, cmd in enumerate(history_to_print, start_number):
+            print(f"{i} {cmd}")
 
 
     # --- Command Execution ---
