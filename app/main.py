@@ -93,7 +93,7 @@ class Shell:
                     case 'r':
                         try:
                             with open(args[1], 'r') as f:
-                                self.history.append(f.readlines())
+                                self.history.extend(f.readlines())
                                 return
                         except Exception:
                             print("error", file=sys.stderr)
