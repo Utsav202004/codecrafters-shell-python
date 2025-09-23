@@ -36,7 +36,15 @@ class Shell:
             'history' : self.builtin_history,
         }
 
-        self.history: List[str] = []
+        try:
+            histfile = os.environ.get('HISTFILE')
+            with open(histfile, 'r') as f:
+                lines = [line.strip() for line in f.readlines() if line.strip()]
+                self.history = lines
+
+        except Exception as e:
+            print(f"history : error accessig the memory for history : {e}")
+            self.history: List[str] = []    
 
         self.setup_autocomplete() # making a autocomplete function
 
