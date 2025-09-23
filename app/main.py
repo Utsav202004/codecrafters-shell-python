@@ -43,7 +43,7 @@ class Shell:
                 self.history = lines
 
         except Exception as e:
-            print(f"history : error accessig the memory for history : {e}")
+            print(f"history : error accessig the memory for history : {e}", file=sys.stderr)
             self.history: List[str] = []    
 
         self.setup_autocomplete() # making a autocomplete function
