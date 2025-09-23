@@ -111,14 +111,14 @@ class Shell:
                         print(f"history: error reading file: {e}", file=sys.stderr)
                     return
                 
-                case "-w":
+                case "-w" | "-a":
                     if len(args) < 2:
                         print("history: option requires an argument", file=sys.stderr)
                         return
                     file_path = args[1]
 
                     try:
-                        with open(file_path, 'w') as f:
+                        with open(file_path, 'w' if args[0] == "-w" else 'a') as f:
                             for line in self.history:
                                 f.write(line + '\n') # manually adding a newline at end of each character
 
