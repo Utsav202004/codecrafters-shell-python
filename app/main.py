@@ -33,7 +33,10 @@ class Shell:
             'pwd' : self.builtin_pwd,
             'type' : self.builtin_type,
             'cd' : self.builtin_cd,
+            'history' : self.builtin_history,
         }
+
+        self.history: List[str] = []
 
         self.setup_autocomplete() # making a autocomplete function
 
@@ -71,6 +74,10 @@ class Shell:
             print(f"cd: {path}: No such file or directory", file=sys.stderr)
         except PermissionError:
             print(f"cd: {path}: Permission denied", file=sys.stderr)
+
+    def builtin_history(self, *args):
+        for i, cmd in enumerate(self.history, 1):
+            print(f"{i} {cmd}")
 
 
     # --- Command Execution ---
@@ -378,6 +385,8 @@ class Shell:
 
                 if not user_input:  # empty input
                     continue
+
+                self.history.append(user_input)
 
                 parts = self.parse_command_line(user_input) # parsing command line
                 if not parts:
