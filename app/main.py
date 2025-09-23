@@ -123,6 +123,8 @@ class Shell:
 
                     except Exception as e:
                         print(f"history: error writing to file : {e}", file=sys.stderr)
+
+                    return
                 
                 case _: # any other invalid options
                     print(f"history: invalid option -- '{args[0]}'", file=sys.stderr)
