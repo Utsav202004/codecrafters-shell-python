@@ -76,8 +76,21 @@ class Shell:
             print(f"cd: {path}: Permission denied", file=sys.stderr)
 
     def builtin_history(self, *args):
-        for i, cmd in enumerate(self.history[len(self.history) - args[1]:], len(self.history) + 1):
-            print(f"{i} {cmd}")
+        history_to_print = self.history
+
+        if args:
+            try:
+                n = int(args[0])
+                history_to_print = self.history[-n:]
+
+            except (ValueError, IndexError):
+                print("history: invalid argument", file=sys.stderr)
+                return
+            
+            start_number = len(self.history) - len(history_to_print) + 1
+
+            for i, cmd in enumerate(history_to_print, start_number):
+                print(f"{i} {cmd}")
 
 
     # --- Command Execution ---
