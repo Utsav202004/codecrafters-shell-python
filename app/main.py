@@ -66,9 +66,9 @@ class Shell:
         if histfile and os.path.isfile(histfile):
             try:
                 new_commands = self.history[self.initial_history_size:]
-                
+
                 with open(histfile, 'a') as f:
-                    for line in self.history:
+                    for line in new_commands:
                         f.write(line + '\n')
 
             except Exception as e:
@@ -162,8 +162,8 @@ class Shell:
                         with open(file_path, 'a') as f:
                             for line in self.history:
                                 f.write(line + '\n') # manually adding a newline at end of each character
-                        if args[0] == "-a":
-                            self.history = []
+                        
+                        self.history = []
                     except Exception as e:
                         print(f"history: error writing to file : {e}", file=sys.stderr)
                     return
